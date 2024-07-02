@@ -1,0 +1,180 @@
+# Create and access the spreadsheet
+from google.colab import auth
+auth.authenticate_user()
+import random
+import pandas as pd
+
+import gspread
+from google.auth import default
+creds, _ = default()
+
+gs = gspread.authorize(creds)
+
+
+#Create google sheet in google drive
+# sh = gs.create('Uchiha Library') #change here to create
+
+#Get/Open/Access google sheet
+worksheet = gs.open('Uchiha Library').sheet1
+
+
+
+headings=['No.','Name','Quantity','Price'] #A1:A4 // 1,1:1,4
+for i in range(0,len(headings)):
+  worksheet.update_cell(1,i+1,headings[i])
+
+# worksheet.update_cell(r,c,value)
+# print('cell[r,c] =',worksheet.cell(r,c).value)
+
+# updating Books Name as Name
+
+Books=[
+    "Java The Complete Reference","OOP Lab (Project)","Fluent Python","Electronic Devices & Circuit","Discrete Mathmatics","Ordinary & Partial Differential Equation",
+    "EDC Lab", "Kobor","Shasti","Shoana Monider Problem Solving", "An Intoduction to Mechanical Engineering","Mid Question","Rango Manch","Arilam","Sik Mundus"
+]
+Books.sort()
+
+# updating number as No.
+for i in range (1,len(Books)):
+  worksheet.update_cell(i+1,1,i)
+
+
+for i in range(0,len(Books)):
+  worksheet.update_cell(i+2,2,Books[i])
+
+
+
+# update quantity
+for i in range (2,2+len(Books)):
+  worksheet.update_cell(i,3,random.randint(10,25))
+
+# update Price
+for i in range (2,2+len(Books)):
+  worksheet.update_cell(i,4,random.randint(300,3000))
+
+
+income = 0
+
+allWorksheet = worksheet.get_all_values()
+df = pd.DataFrame(allWorksheet)
+
+
+
+def Customer (income):
+  allWorksheet = worksheet.get_all_values()
+  df = pd.DataFrame(allWorksheet)
+  print("All the book's that we are offering for this semester are here.\n")
+  print("Check which book you want to purchase")
+  print()
+  print("\t|\t|")
+  print("\tV\tV")
+  print(df)
+  print()
+
+  No_book=int(input("Please enter which book you want to buy.\nN.B. Don't enter anything invalid.\n"))
+  name=worksheet.cell(No_book+1,2).value   # here index is 1 based indexing
+  while (No_book < 1 or No_book > len(Books) or name == "Removed" ) :
+    No_book=int(input("Told you not to mess with me. Now try again ;)\n"))
+    name=worksheet.cell(No_book+1,2).value   # here index is 1 based indexing
+
+  price=int(worksheet.cell(No_book+1,4).value) # price initially is string
+
+  # name is STRING  value
+  print(f"The price of {name} is {price}$\n")
+
+  if input("Do you want to purchase it ?\nType y for purchasing the following book.\n") =="y" :
+    # print("kaam hoise    ")
+
+    limit=int(worksheet.cell(No_book+1,3).value)
+    if limit==0 :
+      print("Out of Stock")
+      if input("Do you want to try other books ? \nType y to continue :") =="y":
+        Customer(income)
+      else :
+        print("Thanks for Visiting Uchiha Library.\n\tInfinite Sukoyomi!!!")
+        return income
+
+    n = int(input("How many do you want to buy ?\n"))
+
+    if n>0 and n<=limit :
+      print(f"{name} is Sold to you!!!!")
+      income += n*price
+      worksheet.update_cell(No_book+1,3,limit-n)
+    else:
+      print(f"Sorry we can\'t give you {n} {name}\'s.")
+      if input("Do you want to try other books ? \nType y to continue :") =="y":
+        Customer(income)
+      else :
+        print("Thanks for Visiting Uchiha Library.\n Infinite Sukoyomi!!!")
+        return income
+
+  else :
+    print("Thanks for Visiting Uchiha Library.\n Amaterasu!!! ")
+
+
+  return income
+
+
+def Admin(income):
+  allWorksheet = worksheet.get_all_values()
+  df = pd.DataFrame(allWorksheet)
+  # Start from here
+  print("Welcome 4dm1n:\n")
+  print(df)
+  print()
+  print(f"Total income = {income} ")
+  lastRow=len(allWorksheet)
+  if input("Do you want to add or remove Something ? (y)") =="y" :
+    if  input("Do you want to add Something ? (y)") =="y" :
+      name=input("Name of the book\n")
+      price=int(input("Price of the Book\n"))
+      n=int (input("How many Books do you wnt to add ?"))
+
+      # lastCol=len(allWorksheet[lastRow-1])
+      worksheet.update_cell(lastRow+1,1,lastRow)
+      worksheet.update_cell(lastRow+1,2,name)
+      worksheet.update_cell(lastRow+1,3,n)
+      worksheet.update_cell(lastRow+1,4,price)
+
+    else:
+      n=int(input("Which book do you want to remove give the serial number ?\n"))
+      n+=1
+      worksheet.update_cell(n,1,"Removed")
+      worksheet.update_cell(n,2,"Removed")
+      worksheet.update_cell(n,3,"Removed")
+      worksheet.update_cell(n,4,"Removed")
+      for i in range(2,lastRow):
+        worksheet.update_cell(i,1,i-1)
+
+    if input("Do you like to continue ?(y/n)\n")=="y":
+      Admin()
+    else:
+      print("GoodBye boss")
+      return 0
+  print("GoodBye boss")
+
+
+# Main
+print (23*"---")
+print()
+print("\tWelcome to the Uchiha Book Store Management System ;) ")
+print()
+print (23*"---")
+print()
+
+print("96 -> Customer ")
+print("69 -> Admin ")
+userMode = input(" Please type Your User Mode : \n")
+
+while (userMode != "96" and userMode != "69") :
+  userMode = input(" Please type Your User Mode : \n")
+
+
+if userMode == "96":
+  income=Customer(income)
+else :
+  psk = int (input("Enter the Password to gain Admin access :"))
+  if psk == 420 :
+    Admin(income)
+  else :
+    print("You are not an Admin Just a Lowly Scammer ;] ")
